@@ -1,95 +1,68 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+'use client'
+import { ListTodo } from "@/components/ListTodo";
+
+import { FormEvent, useEffect, useState } from "react"; 
+import { startMirage } from "../../mirage";
+import useSWR from "swr";
+import { fetcher } from "@/libs/fetcher";
+
+startMirage();
 
 export default function Home() {
+  const [users, setUsers] = useState([]);
+  const [userName, setUserName] = useState('');
+  const { data, error, isLoading } = useSWR<any>(`/api/user`, fetcher);
+
+  const handlerChangeUserName = (value: any) => {
+    setUserName(value);
+  }
+
+  const handlerSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    const user = {
+      name: userName,
+    };
+    
+    await fetch('/api/user', {
+      'method': 'POST',
+      'headers': {
+        "Content-Type": "application/json",
+      },
+      'body': JSON.stringify(user)
+    })
+    .then(data => data.json())
+    .then(({users}) => setUsers(users))
+
+    setUserName('')
+  }
+
+  useEffect(()=>{
+    if(data?.users) {
+      setUsers(data?.users);
+    }
+
+  },[data, isLoading]);
+
+  if (isLoading) return <div>Loading...</div>;
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
+    <>
+      <ListTodo users={users} />
+      <form onSubmit={handlerSubmit}>
         <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+          <label htmlFor="nameTodo">Nome</label>
+          <input 
+            type="text" 
+            name="nameTodo" 
+            id="nameTodo"
+            value={userName}
+            onChange={({target}) => handlerChangeUserName(target.value)}
+            placeholder="Informe seu nome"/>
         </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+        <div>
+          <input id="submitForm" type="submit" value="Salvar" />
+        </div>
+      </form>
+    </>
   )
 }
